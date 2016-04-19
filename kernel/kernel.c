@@ -87,7 +87,7 @@ void kernel_handler_rst(ctx_t* ctx) {
    TIMER0->Timer1Ctrl    |= 0x00000080; // enable          timer
 
    GICC0->PMR             = 0x000000F0; // unmask all            interrupts
-   GICD0->ISENABLER[ 1 ] |= 0x00000010; // enable timer          interrupt
+   GICD0->ISENABLER[ 1 ] |= 0x00001010; // enable timer  and GIC        interrupt
    GICC0->CTLR            = 0x00000001; // enable GIC interface
    GICD0->CTLR            = 0x00000001; // enable GIC distributor
 
@@ -150,6 +150,7 @@ void kernel_handler_irq(ctx_t* ctx) {
 
     if( id == GIC_SOURCE_UART0 ) {
       uint8_t x = PL011_getc( UART0 );
+      PL011_putc( UART0, 'f' );
 
       switch (x) {
           case 'f': fork();
