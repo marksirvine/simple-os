@@ -21,3 +21,19 @@ void writeStr (char* str) {
     write(0, buffer, strlen(buffer));
     return;
 }
+
+/*void writeCurrent (int i) {
+    char buffer[50];
+    char* = "Current program"
+    strcpy
+}*/
+
+void fork() {
+    asm volatile("svc #2     \n");
+    return;
+}
+
+void exit() {
+    asm volatile("svc #3     \n");
+    return;
+}

@@ -20,7 +20,7 @@ void P1() {
 
     for( uint32_t x = ( 1 << 4 ); x < ( 1 << 8 ); x++ ) {
       for( uint32_t y = ( 1 << 4 ); y < ( 1 << 8 ); y++ ) {
-          write( 0, xx, 20 );
+          //write( 0, xx, 20 );
         uint32_t r = gcd( x, y );  // printf( "gcd( %d, %d ) = %d\n", x, y, r );
       }
     }

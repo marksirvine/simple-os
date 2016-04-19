@@ -3,28 +3,31 @@
 pcb_t pcb[ 16 ], *current = NULL;
 
 void scheduler( ctx_t* ctx ) {
-    if      ( current == &pcb[ 0 ] ) {
-        memcpy( &pcb[ 0 ].ctx, ctx, sizeof( ctx_t ) );
-        memcpy( ctx, &pcb[ 1 ].ctx, sizeof( ctx_t ) );
-        current = &pcb[ 1 ];
+    //Go to next pcb
+
+    int currentProgram = current->pid;
+    int next = nextProgram();
+
+    memcpy( &pcb[ currentProgram ].ctx, ctx, sizeof( ctx_t ) );
+    memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
+
+    char c = '0' + next;
+    current = &pcb[ next ];
+    writeCurrent("Switching to process  \n","tot");
+
+
+}
+
+//Program to find the next program available
+int nextProgram (){
+    int currentProgram = current->pid;
+    for (int i = currentProgram + 1; i%16 != currentProgram; i++) {
+        if (pcb[i%16].ctx.sp != 0) {
+            return i%16;
+        }
     }
-    else if ( current == &pcb[ 1 ] ) {
-        memcpy( &pcb[ 1 ].ctx, ctx, sizeof( ctx_t ) );
-        memcpy( ctx, &pcb[ 2 ].ctx, sizeof( ctx_t ) );
-        current = &pcb[ 2 ];
-    }
-    else if ( current == &pcb[ 2 ] ) {
-        memcpy( &pcb[ 2 ].ctx, ctx, sizeof( ctx_t ) );
-        forkProgram(ctx);
-        //memcpy( &pcb[ 3 ].ctx, &pcb[2].ctx, sizeof( ctx_t ) );
-        memcpy( ctx, &pcb[ 3 ].ctx, sizeof( ctx_t ) );
-        current = &pcb[ 3 ];
-    }
-    else if ( current == &pcb[ 3 ] ) {
-        memcpy( &pcb[ 3 ].ctx, ctx, sizeof( ctx_t ) );
-        memcpy( ctx, &pcb[ 0 ].ctx, sizeof( ctx_t ) );
-        current = &pcb[ 0 ];
-    }
+    return currentProgram;
+
 }
 
 void kernel_handler_rst(ctx_t* ctx) {
@@ -34,21 +37,18 @@ void kernel_handler_rst(ctx_t* ctx) {
         memset( &pcb[ i ], 0, sizeof( pcb_t ) );
     }
 
-    memset( &pcb[ 0 ], 0, sizeof( pcb_t ) );
     pcb[ 0 ].pid      = 0;
     pcb[ 0 ].ctx.cpsr = 0x50;
     pcb[ 0 ].ctx.pc   = ( uint32_t )( entry_P0 );
     pcb[ 0 ].ctx.sp   = ( uint32_t )(  &tos_Programs );
     numPrograms ++;
 
-    memset( &pcb[ 1 ], 0, sizeof( pcb_t ) );
     pcb[ 1 ].pid      = 1;
     pcb[ 1 ].ctx.cpsr = 0x50;
     pcb[ 1 ].ctx.pc   = ( uint32_t )( entry_P1 );
     pcb[ 1 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00001000 ));
     numPrograms ++;
 
-    memset( &pcb[ 2 ], 0, sizeof( pcb_t ) );
 
     pcb[ 2 ].pid      = 2;
     pcb[ 2 ].ctx.cpsr = 0x50;
@@ -76,6 +76,9 @@ void kernel_handler_rst(ctx_t* ctx) {
    *   processor via the IRQ interrupt signal, then
    * - enabling IRQ interrupts.
    */
+
+   UART0->IMSC           |= 0x00000010; // enable UART    (Rx) interrupt
+   UART0->CR              = 0x00000301; // enable UART (Tx+Rx)
 
    TIMER0->Timer1Load     = 0x00100000; // select period = 2^20 ticks ~= 1 sec
    TIMER0->Timer1Ctrl     = 0x00000002; // select 32-bit   timer
@@ -122,6 +125,10 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             break;
         }
         case 0x02 : {
+            forkProgram(ctx);
+        }
+        case 0x03 : {
+            exitProgram(ctx);
         }
         default   : { // unknown
             break;
@@ -139,6 +146,17 @@ void kernel_handler_irq(ctx_t* ctx) {
     if( id == GIC_SOURCE_TIMER0 ) {
         TIMER0->Timer1IntClr = 0x01;
         scheduler(ctx);
+    }
+
+    if( id == GIC_SOURCE_UART0 ) {
+      uint8_t x = PL011_getc( UART0 );
+
+      switch (x) {
+          case 'f': fork();
+          case 'e': exit();
+      }
+
+      UART0->ICR = 0x10;
     }
 
     // Step 5: write the interrupt identifier to signal we're done.
@@ -185,6 +203,16 @@ void forkProgram(ctx_t* ctx){
         writeStr("Memory Full\n");
         return;
     }
+}
+
+void exitProgram(ctx_t* ctx){
+    memset( &current, 0, sizeof( pcb_t ) );
+
+    int next = nextProgram();
+    memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
+
+    current = &pcb[ next ];
+    return;
 }
 
 
