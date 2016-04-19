@@ -11,9 +11,9 @@ void scheduler( ctx_t* ctx ) {
     memcpy( &pcb[ currentProgram ].ctx, ctx, sizeof( ctx_t ) );
     memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
 
-    char c = '0' + next;
+
     current = &pcb[ next ];
-    writeCurrent("Switching to process  \n","tot");
+    printNum(next);
 
 
 }
@@ -59,7 +59,7 @@ void kernel_handler_rst(ctx_t* ctx) {
     pcb[ 3 ].pid      = 3;
     pcb[ 3 ].ctx.cpsr = 0x50;
     pcb[ 3 ].ctx.pc   = ( uint32_t )( entry_P1 );
-    pcb[ 3 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00003000 ));
+    pcb[ 3 ].ctx.sp   = 0;
     numPrograms ++;
 
 
@@ -212,6 +212,17 @@ void exitProgram(ctx_t* ctx){
     memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
 
     current = &pcb[ next ];
+    printNum(next);
+
+    return;
+}
+
+void printNum(int num) {
+    char buffer[2];
+    itoa(num,buffer);
+    for (int j=0; j<2;j++){
+        PL011_putc( UART0, buffer[j]);
+    }
     return;
 }
 
