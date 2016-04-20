@@ -12,7 +12,7 @@ uint32_t weight( uint32_t x ) {
 
 void P2() {
     char* xx = "hello world, I'm P2\n";
-    write(0, xx, 20);
+    //write(0, xx, 20);
   while( 1 ) {
 
     // compute the Hamming weight of each x for 2^8 < x < 2^24

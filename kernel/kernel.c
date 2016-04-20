@@ -1,6 +1,7 @@
 #include "kernel.h"
 
 pcb_t pcb[ 16 ], *current = NULL;
+int runningPrograms[16];
 
 void scheduler( ctx_t* ctx ) {
     //Go to next pcb
@@ -21,9 +22,9 @@ void scheduler( ctx_t* ctx ) {
 //Program to find the next program available
 int nextProgram (){
     int currentProgram = current->pid;
-    for (int i = currentProgram + 1; i%16 != currentProgram; i++) {
-        if (pcb[i%16].ctx.sp != 0) {
-            return i%16;
+    for (int i = currentProgram + 1; i%16 != currentProgram; i = (i+1)%16) {
+        if (runningPrograms[i] != 17) {
+            return i;
         }
     }
     return currentProgram;
@@ -35,18 +36,22 @@ void kernel_handler_rst(ctx_t* ctx) {
 
     for (int i = 0; i < 16; i++) {
         memset( &pcb[ i ], 0, sizeof( pcb_t ) );
+        runningPrograms[i] = 17;
     }
 
     pcb[ 0 ].pid      = 0;
     pcb[ 0 ].ctx.cpsr = 0x50;
     pcb[ 0 ].ctx.pc   = ( uint32_t )( entry_P0 );
     pcb[ 0 ].ctx.sp   = ( uint32_t )(  &tos_Programs );
+    runningPrograms[numPrograms] = numPrograms;
     numPrograms ++;
+
 
     pcb[ 1 ].pid      = 1;
     pcb[ 1 ].ctx.cpsr = 0x50;
     pcb[ 1 ].ctx.pc   = ( uint32_t )( entry_P1 );
     pcb[ 1 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00001000 ));
+    runningPrograms[numPrograms] = numPrograms;
     numPrograms ++;
 
 
@@ -54,13 +59,10 @@ void kernel_handler_rst(ctx_t* ctx) {
     pcb[ 2 ].ctx.cpsr = 0x50;
     pcb[ 2 ].ctx.pc   = ( uint32_t )( entry_P2 );
     pcb[ 2 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00002000 ));
+    runningPrograms[numPrograms] = numPrograms;
     numPrograms ++;
 
-    pcb[ 3 ].pid      = 3;
-    pcb[ 3 ].ctx.cpsr = 0x50;
-    pcb[ 3 ].ctx.pc   = ( uint32_t )( entry_P1 );
-    pcb[ 3 ].ctx.sp   = 0;
-    numPrograms ++;
+
 
 
 
@@ -97,16 +99,8 @@ void kernel_handler_rst(ctx_t* ctx) {
 }
 
 void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
-  /* Based on the identified encoded as an immediate operand in the
-   * instruction,
-   *
-   * - read  the arguments from preserved usr mode registers,
-   * - perform whatever is appropriate for this system call,
-   * - write any return value back to preserved usr mode registers.
-   */
 
 
-// write( fd, x, n )
     switch( id ) {
         case 0x00 : { // yield()
             scheduler( ctx );
@@ -125,10 +119,13 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             break;
         }
         case 0x02 : {
+            writeStr("SVC FORK\n");
             forkProgram(ctx);
+            break;
         }
         case 0x03 : {
             exitProgram(ctx);
+            break;
         }
         default   : { // unknown
             break;
@@ -153,11 +150,12 @@ void kernel_handler_irq(ctx_t* ctx) {
       PL011_putc( UART0, 'f' );
 
       switch (x) {
-          case 'f': fork();
-          case 'e': exit();
+          case 'f': {fork();
+                    break;}
+          case 'e': {exitP(); break;}
       }
 
-      UART0->ICR = 0x10;
+      //UART0->ICR = 0x10;
     }
 
     // Step 5: write the interrupt identifier to signal we're done.
@@ -168,18 +166,19 @@ void kernel_handler_irq(ctx_t* ctx) {
 
 void forkProgram(ctx_t* ctx){
     if (numPrograms < 16) {
-        writeStr("Fork Start\n");
+        //writeStr("Fork Start\n");
         //Get unique ID
         int newID = numPrograms;
+        uint32_t sp_offset = (uint32_t) current->ctx.sp;
 
         // Calculate top of stack of parent
-        uint32_t tos_Parent = (uint32_t) tos_Programs - ( current->pid * ( 0x00001000 ));
+        uint32_t tos_Parent = (uint32_t) &tos_Programs - ( current->pid * ( 0x00001000 ));
 
         //Calculate the top of the stack of child
-        uint32_t tos_Child = ( uint32_t ) tos_Programs - ( newID * ( 0x00001000 ));
+        uint32_t tos_Child = ( uint32_t ) &tos_Programs - ( (newID +1) * ( 0x00001000 ));
 
         //Calculate the position of the stack pointer of child process
-        uint32_t offset = (uint32_t) tos_Parent - (current->ctx.sp);
+        uint32_t offset = (uint32_t) tos_Parent - (sp_offset);
         uint32_t sp_Child = (uint32_t) tos_Child - offset;
         //printf("%s\n",offset );
 
@@ -198,16 +197,22 @@ void forkProgram(ctx_t* ctx){
         //Set the new stack pointer
         pcb[ newID ].ctx.sp   = sp_Child;
 
+        //Add program to running programs list
+        runningPrograms[newID] = newID;
+
         writeStr("Fork\n");
         return;
+
     } else {
-        writeStr("Memory Full\n");
+        //writeStr("Memory Full\n");
         return;
     }
 }
 
 void exitProgram(ctx_t* ctx){
+    runningPrograms[current->pid] = 17;
     memset( &current, 0, sizeof( pcb_t ) );
+
 
     int next = nextProgram();
     memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );

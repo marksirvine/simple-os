@@ -33,7 +33,7 @@ void fork() {
     return;
 }
 
-void exit() {
+void exitP() {
     asm volatile("svc #3     \n");
     return;
 }
