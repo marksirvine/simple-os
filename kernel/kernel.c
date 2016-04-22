@@ -166,6 +166,7 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             break;
         }
         case 0x03 : {
+            writeStr("SVC EXIT\n");
             exitProgram(ctx);
             break;
         }
@@ -271,12 +272,15 @@ void forkProgram(ctx_t* ctx){
 }
 
 void exitProgram(ctx_t* ctx){
-    runningPrograms[current->pid] = -1;
 
-    memset( &current, 0, sizeof( pcb_t ) );
-    int next = nextProgram();
-    memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
-    current = &pcb[next];
+    //int next = nextProgram();
+    //memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
+    runningPrograms[current->pid] = -1;
+    scheduler(ctx);
+
+    //memset( &current, 0, sizeof( pcb_t ) );
+
+    //current = &pcb[next];
 
     return;
 }
