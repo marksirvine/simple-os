@@ -20,7 +20,7 @@ void P2() {
     for( uint32_t x = ( 1 << 8 ); x < ( 1 << 24 ); x++ ) {
         //write(0, xx, 20);
       uint32_t r = weight( x );  // printf( "weight( %d ) = %d\n", x, r );
-      //write(0, xx, 20);
+      //printNum(x);
     }
   }
 
