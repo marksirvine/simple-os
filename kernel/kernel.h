@@ -41,4 +41,10 @@ typedef struct {
   int priority;
 } pcb_t;
 
+typedef struct {
+	int max;
+	int forks[16];
+	int noWithForks;
+} dp_data;
+
 #endif

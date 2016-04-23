@@ -2,13 +2,13 @@
 
 pcb_t pcb[ 16 ], *current = NULL;
 int runningPrograms[16];
-int prioritys[16];
 uint32_t sizeOfContext;
 void forkProgram(ctx_t* ctx);
 void printNum(int num);
 //int nextProgram();
 void incAges();
 int highestPriority();
+dp_data *data;
 
 void scheduler( ctx_t* ctx ) {
     //Go to next pcb
@@ -104,10 +104,12 @@ void kernel_handler_rst(ctx_t* ctx) {
     pcb[ 3 ].ctx.pc   = ( uint32_t )( entry_P2 );
     pcb[ 3 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00003000 ));
 
+
     current = &pcb[ 0 ];
 
     memcpy( ctx, &current->ctx, sizeof( ctx_t ) );
 
+    initData(data);
 
   /* Configure the mechanism for interrupt handling by
    *
@@ -294,6 +296,35 @@ void printNum(int num) {
     return;
 }
 
+void initData(dp_data data){
+	data.max = 0;
+	for (int i=0;i<16; i++){
+		if (runningPrograms[i] != -1) {
+			data.max ++;
+		}
+		data.forks[i] = -1;
+	}
+	data.noWithForks = 0;
+}
+
+int eat(){
+    //If noeating >= max return 0
+    //if rightfork available return 1
+    //if leftfork available return 0
+    int pid = current->pid;
+    if (data->noWithForks <= data->max){
+        return 0;
+    } else if (data->forks[pid] == -1){
+        data->forks[pid] = pid;
+        data->noWithForks ++;
+        return 1;
+    } else if (data->forks[((pid+15)%16)] == -1){
+        data->forks[((pid+15)%16)] = pid;
+        data->noWithForks ++;
+        return 1;
+    }
+    return 0;
+}
 
 //Things to do
 //Assign top of stack, change creation of programs to be dynamic? meaning that the Programs,p1,p2 are created with functions
