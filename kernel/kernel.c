@@ -172,6 +172,11 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             exitProgram(ctx);
             break;
         }
+        case 0x04 : {
+            writeStr("attempting to eat\n");
+            ctx->gpr[ 0 ] = pickFork();
+            break;
+        }
         default   : { // unknown
             break;
         }
@@ -307,7 +312,7 @@ void initData(dp_data data){
 	data.noWithForks = 0;
 }
 
-int eat(){
+int pickFork(){
     //If noeating >= max return 0
     //if rightfork available return 1
     //if leftfork available return 0
@@ -324,6 +329,11 @@ int eat(){
         return 1;
     }
     return 0;
+}
+
+void putDownForks(){
+    //reduce holdign forks by one
+    //set 
 }
 
 //Things to do

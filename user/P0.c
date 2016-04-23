@@ -27,6 +27,21 @@ void P0() {
 
       int r = is_prime( x ); // printf( "is_prime( %d ) = %d\n", x, r );
       //write( 0, xx, 20 );
+      //Attempt to eat if 0 then then eait time and try again
+      // if 1 then eat then wait then put down
+      int i = eat();
+      if (i == 0){
+          for (int j=0; j < 10000; j++ ){
+              int q = is_prime( j );
+          }
+      } else {
+          putDownForks();
+          for (int j=0; j < 200000; j++ ){
+              int q = is_prime( j );
+
+              //WAIT FOR Time
+          }
+      }
     }
   }
 

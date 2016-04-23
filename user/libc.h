@@ -14,5 +14,6 @@ void writeStr(char* str);
 
 void fork();
 void exitP();
+int eat();
 char* itoa(int i, char b[]);
 #endif

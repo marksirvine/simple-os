@@ -38,6 +38,14 @@ void exitP() {
     return;
 }
 
+int eat(){
+    int r;
+    asm volatile(   "svc #4     \n"
+                    "mov %0, r0 \n"
+                :   "=r" (r));
+    return r;
+}
+
 char* itoa(int i, char b[]){
     char const digit[] = "0123456789";
     char* p = b;
