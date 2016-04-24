@@ -2,6 +2,7 @@
 
 pcb_t pcb[ 16 ], *current = NULL;
 int runningPrograms[16];
+int ipcFlag =0;
 uint32_t sizeOfContext;
 void forkProgram(ctx_t* ctx);
 void printNum(int num);
@@ -17,21 +18,21 @@ dp_data *data;
 
 void scheduler( ctx_t* ctx ) {
     //Go to next pcb
+    if (ipcFlag == 0) {
+        int currentProgram = current->pid;
+        incAges();
+        int next = highestPriority();
+        if (next != currentProgram){
+            memcpy( &pcb[ currentProgram ].ctx, ctx, sizeof( ctx_t ) );
+            memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
 
-    int currentProgram = current->pid;
-    incAges();
-    int next = highestPriority();
-    if (next != currentProgram){
-        memcpy( &pcb[ currentProgram ].ctx, ctx, sizeof( ctx_t ) );
-        memcpy( ctx, &pcb[ next ].ctx, sizeof( ctx_t ) );
 
+            current = &pcb[ next ];
+            //printNum(next);
 
-        current = &pcb[ next ];
-        printNum(next);
-
+        }
+        resetAge(next);
     }
-    resetAge(next);
-
 }
 void incAges (){
     for (int i = 0; i <16; i ++){
@@ -374,30 +375,44 @@ int pickFork(){
     //If noeating >= max return 0
     //if rightfork available return 1
     //if leftfork available return 0
-    int pid = current->pid;
     dp_data newData;
     newData = *data;
-    if (newData.noWithForks >= newData.max){
+    int pid = current->pid;
+
+    if (newData.noWithForks > newData.max){
+        data = &newData;
         printNum(pid);
         writeStr(" Attempted eating but could not\n");
-        data = &newData;
         return 0;
         //if the fork is available
     } else if ((newData.forks[pid] == 18) /*&& (data->forks[pid] != pid)*/){
         newData.forks[pid] = pid;
+        if (newData.forks[(pid+numPrograms-1)%numPrograms] == pid){
+            data = &newData;
+            printNum(pid);
+            writeStr(" Picked up right fork and started eating\n");
+            return 2;
+        } else {
         newData.noWithForks ++;
+        data = &newData;
         printNum(pid);
         writeStr(" Picked up right fork\n");
-        data = &newData;
-        //if (data->forks[pid] == pid)
-        return 1;
+        return 1; }
     } else if ((newData.forks[(pid+numPrograms-1)%numPrograms] == 18)/*&& (data->forks[((pid+15)%16)] != pid)*/){
         newData.forks[(pid+numPrograms-1)%numPrograms] = pid;
+        //newData.noWithForks ++;
+        if (newData.forks[pid] == pid){
+            data = &newData;
+            printNum(pid);
+            writeStr(" Picked up left fork and started eating\n");
+            return 2;
+        } else {
         newData.noWithForks ++;
+        data = &newData;
         printNum(pid);
         writeStr(" Picked up left fork\n");
-        data = &newData;
         return 1;
+    }
     }
     return 0;
 }
@@ -405,12 +420,25 @@ int pickFork(){
 void putDownForks(){
     //reduce holdign forks by one
     //set
+    dp_data newData;
+    newData = *data;
+
+    newData.noWithForks --;
+    int pid = current->pid;
+    newData.forks[pid] = 18;
+    newData.forks[(pid+numPrograms-1)%numPrograms] = 18;
+    data = &newData;
     printNum(current->pid);
     writeStr(" Finished Eating and now thinking\n");
-    data->noWithForks --;
-    int pid = current->pid;
-    data->forks[pid] = 18;
-    data->forks[(pid+numPrograms-1)%numPrograms] = 18;
+    return;
+}
+
+int getIpcFlag(){
+    return ipcFlag;
+}
+
+void setIpcFlag(int i){
+    ipcFlag = i;
     return;
 }
 

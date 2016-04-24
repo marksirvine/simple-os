@@ -18,6 +18,7 @@
 #include "P2.h"
 
 int numPrograms;
+int ipcFlag;
 extern uint32_t tos_Programs;
 /* The kernel source code is made simpler by three type definitions:
  *

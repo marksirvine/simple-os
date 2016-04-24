@@ -29,19 +29,33 @@ void P0() {
       //write( 0, xx, 20 );
       //Attempt to eat if 0 then then eait time and try again
       // if 1 then eat then wait then put down
+      //ipcFlag = 1;
       int i = eat();
+      //ipcFlag = 0;
       if (i == 0){
-          for (int j=0; j < 10000; j++ ){
+          //If hungry
+          for (int j=0; j < 200000; j++ ){
               int q = is_prime( j );
           }
-      } else {
-          putDownForks();
+      } else if (i == 2) {
+          //If eating
+          for (int j=0; j < 400000; j++ ){
+              int q = is_prime( j );
+
+              //WAIT FOR Time
+          }
+          putDown();
           //printNum(current->pid);
           //writeStr(" Eaten and thinking");
           for (int j=0; j < 800000; j++ ){
               int q = is_prime( j );
 
               //WAIT FOR Time
+          }
+      } else {
+          //If picked up one fork
+          for (int j=0; j < 400000; j++ ){
+              int q = is_prime( j );
           }
       }
     }
