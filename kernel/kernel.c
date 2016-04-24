@@ -5,9 +5,14 @@ int runningPrograms[16];
 uint32_t sizeOfContext;
 void forkProgram(ctx_t* ctx);
 void printNum(int num);
-//int nextProgram();
 void incAges();
 int highestPriority();
+dp_data initData();
+int pickFork();
+void putDownForks();
+void exitProgram(ctx_t *ctx);
+void resetAge(int pid);
+void putDownForks();
 dp_data *data;
 
 void scheduler( ctx_t* ctx ) {
@@ -66,6 +71,7 @@ int nextProgram (){
 void kernel_handler_rst(ctx_t* ctx) {
     numPrograms = 0;
     sizeOfContext = sizeof(ctx_t);
+
     for (int i = 0; i < 16; i++) {
         memset( &pcb[ i ], 0, sizeof( pcb_t ) );
         runningPrograms[i] = -1;
@@ -79,37 +85,62 @@ void kernel_handler_rst(ctx_t* ctx) {
     pcb[ 0 ].ctx.sp   = ( uint32_t )(  &tos_Programs );
 
     runningPrograms[numPrograms] = 1;
+
+
     numPrograms ++;
 
 
     pcb[ 1 ].pid      = 1;
     pcb[ 1 ].ctx.cpsr = 0x50;
-    pcb[ 1 ].priority = 5;
-    pcb[ 1 ].ctx.pc   = ( uint32_t )( entry_P1 );
+    pcb[ 1 ].priority = 1;
+    pcb[ 1 ].ctx.pc   = ( uint32_t )( entry_P0 );
     pcb[ 1 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00001000 ));
-    runningPrograms[numPrograms] = 5;
+    runningPrograms[numPrograms] = 1;
     numPrograms ++;
 
 
     pcb[ 2 ].pid      = 2;
     pcb[ 2 ].ctx.cpsr = 0x50;
-    pcb[ 2 ].priority = 10;
-    pcb[ 2 ].ctx.pc   = ( uint32_t )( entry_P2 );
+    pcb[ 2 ].priority = 1;
+    pcb[ 2 ].ctx.pc   = ( uint32_t )( entry_P0 );
     pcb[ 2 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00002000 ));
-    runningPrograms[numPrograms] = 10;
+    runningPrograms[numPrograms] = 1;
     numPrograms ++;
 
     pcb[ 3 ].pid      = 3;
     pcb[ 3 ].ctx.cpsr = 0x50;
-    pcb[ 3 ].ctx.pc   = ( uint32_t )( entry_P2 );
+    pcb[ 3 ].ctx.pc   = ( uint32_t )( entry_P0 );
     pcb[ 3 ].ctx.sp   = ( uint32_t )(  &tos_Programs - ( 0x00003000 ));
 
 
     current = &pcb[ 0 ];
 
     memcpy( ctx, &current->ctx, sizeof( ctx_t ) );
+    writeStr("reset\n");
+    //*data = initData();
 
-    initData(data);
+////////////////////////////////////////////////////////////
+dp_data initData;
+initData.max =2;
+initData.noWithForks = 0;
+initData.forks[0] = 18;
+initData.forks[1] = 18;
+initData.forks[2] = 18;
+initData.forks[3] = 17;
+initData.forks[4] = 17;
+initData.forks[5] = 17;
+initData.forks[6] = 17;
+initData.forks[7] = 17;
+initData.forks[8] = 17;
+initData.forks[9] = 17;
+initData.forks[10] = 17;
+initData.forks[11] = 17;
+initData.forks[12] = 17;
+initData.forks[13] = 17;
+initData.forks[14] = 17;
+initData.forks[15] = 17;
+data = &initData;
+////////////////////////////////////////////////////////////
 
   /* Configure the mechanism for interrupt handling by
    *
@@ -136,7 +167,7 @@ void kernel_handler_rst(ctx_t* ctx) {
 
 
    irq_enable();
-   writeStr("reset\n");
+
    return;
 }
 
@@ -173,8 +204,15 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             break;
         }
         case 0x04 : {
-            writeStr("attempting to eat\n");
+            //printNum(current->pid);
+            //writeStr(" attempting to eat\n");
             ctx->gpr[ 0 ] = pickFork();
+            break;
+        }
+        case 0x05 : {
+            //printNum(current->pid);
+            //writeStr(" Finished Eating\n");/n
+            putDownForks();
             break;
         }
         default   : { // unknown
@@ -301,15 +339,35 @@ void printNum(int num) {
     return;
 }
 
-void initData(dp_data data){
-	data.max = 0;
-	for (int i=0;i<16; i++){
-		if (runningPrograms[i] != -1) {
-			data.max ++;
-		}
-		data.forks[i] = -1;
-	}
-	data.noWithForks = 0;
+dp_data initData(){
+    dp_data initData;
+	 initData.max = 0;
+	 /*for (int i=0;i<16; i=i+1){
+	 	/*if (runningPrograms[i] != -1) {
+	 		initData.max ++;
+	 	}
+	 	initData.forks[i] = -1;
+    }*/
+    //
+    data->forks[0] = 0;
+    data->forks[1] = 1;
+    data->forks[2] = 2;
+    data->forks[3] = -1;
+    data->forks[4] = -1;
+    data->forks[5] = -1;
+    data->forks[6] = -1;
+    data->forks[7] = -1;
+    data->forks[8] = -1;
+    data->forks[9] = -1;
+    data->forks[10] = -1;
+    data->forks[11] = -1;
+    data->forks[12] = -1;
+    data->forks[13] = -1;
+    data->forks[14] = -1;
+    data->forks[15] = -1;
+
+	 initData.noWithForks = 0;
+    return initData;
 }
 
 int pickFork(){
@@ -317,15 +375,28 @@ int pickFork(){
     //if rightfork available return 1
     //if leftfork available return 0
     int pid = current->pid;
-    if (data->noWithForks <= data->max){
+    dp_data newData;
+    newData = *data;
+    if (newData.noWithForks >= newData.max){
+        printNum(pid);
+        writeStr(" Attempted eating but could not\n");
+        data = &newData;
         return 0;
-    } else if (data->forks[pid] == -1){
-        data->forks[pid] = pid;
-        data->noWithForks ++;
+        //if the fork is available
+    } else if ((newData.forks[pid] == 18) /*&& (data->forks[pid] != pid)*/){
+        newData.forks[pid] = pid;
+        newData.noWithForks ++;
+        printNum(pid);
+        writeStr(" Picked up right fork\n");
+        data = &newData;
+        //if (data->forks[pid] == pid)
         return 1;
-    } else if (data->forks[((pid+15)%16)] == -1){
-        data->forks[((pid+15)%16)] = pid;
-        data->noWithForks ++;
+    } else if ((newData.forks[(pid+numPrograms-1)%numPrograms] == 18)/*&& (data->forks[((pid+15)%16)] != pid)*/){
+        newData.forks[(pid+numPrograms-1)%numPrograms] = pid;
+        newData.noWithForks ++;
+        printNum(pid);
+        writeStr(" Picked up left fork\n");
+        data = &newData;
         return 1;
     }
     return 0;
@@ -333,7 +404,14 @@ int pickFork(){
 
 void putDownForks(){
     //reduce holdign forks by one
-    //set 
+    //set
+    printNum(current->pid);
+    writeStr(" Finished Eating and now thinking\n");
+    data->noWithForks --;
+    int pid = current->pid;
+    data->forks[pid] = 18;
+    data->forks[(pid+numPrograms-1)%numPrograms] = 18;
+    return;
 }
 
 //Things to do

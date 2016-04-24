@@ -16,7 +16,7 @@ int is_prime( uint32_t x ) {
 
 void P0() {
   int x = 0;
-  char* xx = "hello world, I'm P0\n";
+  //char* xx = "hello world, I'm P0\n";
 
 
   while( 1 ) {
@@ -36,7 +36,9 @@ void P0() {
           }
       } else {
           putDownForks();
-          for (int j=0; j < 200000; j++ ){
+          //printNum(current->pid);
+          //writeStr(" Eaten and thinking");
+          for (int j=0; j < 800000; j++ ){
               int q = is_prime( j );
 
               //WAIT FOR Time
