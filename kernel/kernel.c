@@ -1,5 +1,8 @@
 #include "kernel.h"
 
+
+// Main operating system
+
 pcb_t pcb[ 16 ], *current = NULL;
 int runningPrograms[16];
 int ipcFlag =0;
@@ -16,6 +19,8 @@ void resetAge(int pid);
 void putDownForks();
 dp_data *data;
 
+
+// Process scheduler
 void scheduler( ctx_t* ctx ) {
     //Go to next pcb
     if (ipcFlag == 0) {
@@ -34,6 +39,8 @@ void scheduler( ctx_t* ctx ) {
         resetAge(next);
     }
 }
+
+// Process increment process age
 void incAges (){
     for (int i = 0; i <16; i ++){
         if (runningPrograms[i] != -1){
@@ -42,10 +49,12 @@ void incAges (){
     }
 }
 
+// Reset process age
 void resetAge(int pid){
     runningPrograms[pid] = pcb[pid].priority + (runningPrograms[pid] - pcb[pid].priority )/2;
 }
 
+// Find highest priority process
 int highestPriority () {
     int highestPriority = -1;
     int highestPID = -1;
@@ -69,6 +78,7 @@ int nextProgram (){
     return 0;
 }
 
+// Reset the kernel
 void kernel_handler_rst(ctx_t* ctx) {
     numPrograms = 0;
     sizeOfContext = sizeof(ctx_t);
@@ -172,6 +182,7 @@ data = &initData;
    return;
 }
 
+
 void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
 
 
@@ -205,29 +216,26 @@ void kernel_handler_svc( ctx_t* ctx, uint32_t id ) {
             break;
         }
         case 0x04 : {
-            //printNum(current->pid);
-            //writeStr(" attempting to eat\n");
+
             ctx->gpr[ 0 ] = pickFork();
             break;
         }
         case 0x05 : {
-            //printNum(current->pid);
-            //writeStr(" Finished Eating\n");/n
+
             putDownForks();
             break;
         }
-        default   : { // unknown
+        default   : {
             break;
         }
     }
 }
 
+// Handle interupt request
 void kernel_handler_irq(ctx_t* ctx) {
     //  read  the interrupt identifier so we know the source.
 
     uint32_t id = GICC0->IAR;
-
-    // Step 4: handle the interrupt, then clear (or reset) the source.
 
     if( id == GIC_SOURCE_TIMER0 ) {
         TIMER0->Timer1IntClr = 0x01;
@@ -251,18 +259,18 @@ void kernel_handler_irq(ctx_t* ctx) {
       UART0->ICR = 0x10;
     }
 
-    // Step 5: write the interrupt identifier to signal we're done.
 
     GICC0->EOIR = id;
     return;
 }
 
+// Handle process fork
 void forkProgram(ctx_t* ctx){
     if (numPrograms < 16) {
-        //writeStr("Fork Start\n");
+
         //Get unique ID
         int newID = nextProgram();
-        //uint32_t sp_offset = (uint32_t) ctx->sp;
+
 
         // Calculate top of stack of parent
         uint32_t tos_Parent = (uint32_t) &tos_Programs - ( current->pid * ( 0x00001000 ));
@@ -272,9 +280,9 @@ void forkProgram(ctx_t* ctx){
         uint32_t tos_Child = ( uint32_t ) ((int) &tos_Programs) - ( (newID) * ( 0x00001000 ));
 
         //Calculate the position of the stack pointer of child process
-        //uint32_t offset = (uint32_t) tos_Parent - (sp_offset);
+
         uint32_t sp_Child = (uint32_t) tos_Child + (tos_Parent - ctx->sp);
-        //printf("%s\n",offset );
+
 
         //Increment number of programs
         numPrograms++;
@@ -284,10 +292,6 @@ void forkProgram(ctx_t* ctx){
         pcb[ newID ].pid      = newID;
         pcb[ newID ].ctx.pc   = ( uint32_t )( entry_P2 );
         pcb[ newID ].ctx.cpsr = 0x50;
-
-        /*for (int i =0; i<13; i = i +1){
-            pcb[ newID ].ctx.gpr[i]    = ctx->gpr[i];
-        }*/
 
         pcb[ newID ].ctx.sp   = tos_Child;
         //pcb[ newID ].ctx.lr   = ctx->lr;
@@ -317,6 +321,7 @@ void forkProgram(ctx_t* ctx){
     }
 }
 
+// Exit a processes
 void exitProgram(ctx_t* ctx){
 
     //int next = nextProgram();
@@ -340,16 +345,11 @@ void printNum(int num) {
     return;
 }
 
+
+// Initialise data
 dp_data initData(){
     dp_data initData;
-	 initData.max = 0;
-	 /*for (int i=0;i<16; i=i+1){
-	 	/*if (runningPrograms[i] != -1) {
-	 		initData.max ++;
-	 	}
-	 	initData.forks[i] = -1;
-    }*/
-    //
+	initData.max = 0;
     data->forks[0] = 0;
     data->forks[1] = 1;
     data->forks[2] = 2;
@@ -371,6 +371,7 @@ dp_data initData(){
     return initData;
 }
 
+// dining philosophers handler
 int pickFork(){
     //If noeating >= max return 0
     //if rightfork available return 1
@@ -417,9 +418,10 @@ int pickFork(){
     return 0;
 }
 
+// Dining philosophers handler
 void putDownForks(){
-    //reduce holdign forks by one
-    //set
+    //reduce holding forks by one
+
     dp_data newData;
     newData = *data;
 
@@ -441,6 +443,3 @@ void setIpcFlag(int i){
     ipcFlag = i;
     return;
 }
-
-//Things to do
-//Assign top of stack, change creation of programs to be dynamic? meaning that the Programs,p1,p2 are created with functions

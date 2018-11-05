@@ -1,5 +1,7 @@
 #include "P2.h"
 
+// P2 - basic process that does arbitrary computing
+
 uint32_t weight( uint32_t x ) {
   x = ( x & 0x55555555 ) + ( ( x >>  1 ) & 0x55555555 );
   x = ( x & 0x33333333 ) + ( ( x >>  2 ) & 0x33333333 );

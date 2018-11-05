@@ -1,5 +1,7 @@
 #include "libc.h"
 
+// Script containing functions for processes to use
+
 int write( int fd, void* x, size_t n ) {
   int r;
 
@@ -22,11 +24,6 @@ void writeStr (char* str) {
     return;
 }
 
-/*void writeCurrent (int i) {
-    char buffer[50];
-    char* = "Current program"
-    strcpy
-}*/
 
 void fork() {
     asm volatile("svc #2     \n");

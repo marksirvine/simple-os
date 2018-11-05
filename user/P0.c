@@ -1,5 +1,8 @@
 #include "P0.h"
 
+
+// P0 - basic dining philosophers process
+
 int is_prime( uint32_t x ) {
   if ( !( x & 1 ) || ( x < 2 ) ) {
     return ( x == 2 );
@@ -16,8 +19,6 @@ int is_prime( uint32_t x ) {
 
 void P0() {
   int x = 0;
-  //char* xx = "hello world, I'm P0\n";
-
 
   while( 1 ) {
 
@@ -25,13 +26,10 @@ void P0() {
 
     for( uint32_t x = ( 1 << 8 ); x < ( 1 << 24 ); x++ ) {
 
-      int r = is_prime( x ); // printf( "is_prime( %d ) = %d\n", x, r );
-      //write( 0, xx, 20 );
-      //Attempt to eat if 0 then then eait time and try again
-      // if 1 then eat then wait then put down
-      //ipcFlag = 1;
+      int r = is_prime( x );
+
       int i = eat();
-      //ipcFlag = 0;
+
       if (i == 0){
           //If hungry
           for (int j=0; j < 200000; j++ ){

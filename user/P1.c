@@ -1,5 +1,7 @@
 #include "P1.h"
 
+// P1 - basic process that does arbitrary computing
+
 uint32_t gcd( uint32_t x, uint32_t y ) {
   if     ( x == y ) {
     return x;
